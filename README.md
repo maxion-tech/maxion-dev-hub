@@ -18,28 +18,6 @@ Internal developer tools & authentication hub for the Maxion Platform.
 - Node.js 18+
 - npm
 
-### Environment Variables
-
-Create a `.env.local` file with the following:
-
-```env
-# Platform Firebase
-NEXT_PUBLIC_PLATFORM_API_KEY=
-NEXT_PUBLIC_PLATFORM_AUTH_DOMAIN=
-NEXT_PUBLIC_PLATFORM_PROJECT_ID=
-NEXT_PUBLIC_PLATFORM_STORAGE_BUCKET=
-NEXT_PUBLIC_PLATFORM_MESSAGING_SENDER_ID=
-NEXT_PUBLIC_PLATFORM_APP_ID=
-
-# CMS Firebase
-NEXT_PUBLIC_CMS_API_KEY=
-NEXT_PUBLIC_CMS_AUTH_DOMAIN=
-NEXT_PUBLIC_CMS_PROJECT_ID=
-NEXT_PUBLIC_CMS_STORAGE_BUCKET=
-NEXT_PUBLIC_CMS_MESSAGING_SENDER_ID=
-NEXT_PUBLIC_CMS_APP_ID=
-```
-
 ### Install & Run
 
 ```bash
