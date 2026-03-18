@@ -48,7 +48,7 @@ export function TextFormatterSection({ mode }: TextFormatterSectionProps) {
   const [isString, setIsString] = useState(false);
   const [removeDuplicates, setRemoveDuplicates] = useState(false);
   const [convertToLines, setConvertToLines] = useState(false);
-  const [splitByLines, setSplitByLines] = useState(false);
+  const [splitByLines, setSplitByLines] = useState(true);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const outputRef = useRef<HTMLTextAreaElement>(null);
