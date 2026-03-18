@@ -11,15 +11,6 @@ const firebaseConfig = {
     appId: process.env.NEXT_PUBLIC_PLATFORM_APP_ID,
     measurementId: process.env.NEXT_PUBLIC_PLATFORM_MEASUREMENT_ID,
   },
-  cms: {
-    apiKey: process.env.NEXT_PUBLIC_CMS_API_KEY,
-    authDomain: process.env.NEXT_PUBLIC_CMS_AUTH_DOMAIN,
-    projectId: process.env.NEXT_PUBLIC_CMS_PROJECT_ID,
-    storageBucket: process.env.NEXT_PUBLIC_CMS_STORAGE_BUCKET,
-    messagingSenderId: process.env.NEXT_PUBLIC_CMS_MESSAGING_SENDER_ID,
-    appId: process.env.NEXT_PUBLIC_CMS_APP_ID,
-    measurementId: process.env.NEXT_PUBLIC_CMS_MEASUREMENT_ID,
-  },
 };
 
 function getFirebaseApp(name: string, config: Record<string, unknown>) {
@@ -31,4 +22,3 @@ function getFirebaseApp(name: string, config: Record<string, unknown>) {
 }
 
 export const platformFirebase = getFirebaseApp("platform", firebaseConfig.platform);
-export const cmsFirebase = getFirebaseApp("cms", firebaseConfig.cms);

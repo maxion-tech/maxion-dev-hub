@@ -2,7 +2,6 @@ import { platformFirebase } from "@/config/firebase";
 
 export const ProviderType = {
   PLATFORM: "PLATFORM",
-  CMS: "CMS",
 } as const;
 
 export type ProviderTypeValue = (typeof ProviderType)[keyof typeof ProviderType];
