@@ -12,6 +12,9 @@ import { TEXT_CASES, TEXT_CASE_OPTIONS, DEFAULT_TEXT_CASE, type TextCaseValue } 
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import { Dropdown } from "@/components/ui/dropdown";
 import { KbdShortcut } from "@/components/ui/kbd-shortcut";
+import { ToggleSwitch } from "@/components/ui/toggle-switch";
+import { SectionLabel } from "@/components/ui/section-label";
+import { Button } from "@/components/ui/button";
 
 const symbols = [
   { value: ",", label: "Comma (,)" },
@@ -32,38 +35,6 @@ const brackets = [
 
 interface TextFormatterSectionProps {
   mode: "delimiters" | "json" | "env";
-}
-
-function ToggleSwitch({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <label className="flex items-center gap-2 cursor-pointer group py-1.5">
-      <button
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
-          checked ? "bg-primary" : "bg-border"
-        }`}
-      >
-        <span
-          className={`inline-block h-3.5 w-3.5 transform rounded-full bg-foreground transition-transform ${
-            checked ? "translate-x-[18px]" : "translate-x-[3px]"
-          }`}
-        />
-      </button>
-      <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors whitespace-nowrap">
-        {label}
-      </span>
-    </label>
-  );
 }
 
 export function TextFormatterSection({ mode }: TextFormatterSectionProps) {
@@ -326,9 +297,9 @@ export function TextFormatterSection({ mode }: TextFormatterSectionProps) {
         {!isJsonMode && !isEnvMode && (
           <div className="flex flex-wrap items-end gap-3 sm:gap-4 px-3 sm:px-4 pt-3 pb-2.5">
             <div className="flex-1 min-w-[8rem]">
-              <span className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
+              <SectionLabel as="span" className="block mb-1.5">
                 Separator
-              </span>
+              </SectionLabel>
               <Dropdown
                 value={selectedSymbol}
                 options={symbols}
@@ -337,9 +308,9 @@ export function TextFormatterSection({ mode }: TextFormatterSectionProps) {
               />
             </div>
             <div className="flex-1 min-w-[8rem]">
-              <span className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
+              <SectionLabel as="span" className="block mb-1.5">
                 Wrap
-              </span>
+              </SectionLabel>
               <Dropdown
                 value={selectedBracket}
                 options={brackets}
@@ -348,9 +319,9 @@ export function TextFormatterSection({ mode }: TextFormatterSectionProps) {
               />
             </div>
             <div className="flex-1 min-w-[8rem]">
-              <span className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
+              <SectionLabel as="span" className="block mb-1.5">
                 Case
-              </span>
+              </SectionLabel>
               <Dropdown
                 value={selectedTextCase}
                 options={TEXT_CASE_OPTIONS as unknown as readonly { value: string; label: string }[]}
@@ -392,10 +363,11 @@ export function TextFormatterSection({ mode }: TextFormatterSectionProps) {
 
           {/* Action buttons */}
           <div className="flex items-center gap-2 ml-auto">
-            <button
+            <Button
+              variant="primary"
               onClick={handleConvertAndCopy}
               disabled={!input.trim()}
-              className="flex items-center gap-2 rounded-lg bg-primary px-3 sm:px-4 py-2 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3 sm:px-4"
             >
               {copied ? (
                 <Check className="h-3.5 w-3.5" />
@@ -404,23 +376,24 @@ export function TextFormatterSection({ mode }: TextFormatterSectionProps) {
               )}
               <span className="hidden sm:inline">{copied ? "Copied" : "Convert & Copy"}</span>
               <span className="sm:hidden">{copied ? "Copied" : "Copy"}</span>
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleConvert}
               disabled={!input.trim()}
               title="Convert"
-              className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-all hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3"
             >
               <ArrowRightLeft className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Convert</span>
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
               onClick={handleClear}
               aria-label="Clear input and output"
-              className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground transition-all hover:bg-secondary hover:text-foreground"
+              className="px-3 py-2"
             >
               <Trash2 className="h-3.5 w-3.5" />
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -430,9 +403,7 @@ export function TextFormatterSection({ mode }: TextFormatterSectionProps) {
         {/* Input panel */}
         <div className="flex-1 flex flex-col rounded-xl border border-border bg-card overflow-hidden min-w-0 min-h-[140px] sm:min-h-[200px] lg:min-h-0">
           <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-secondary/30">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Input
-            </span>
+            <SectionLabel>Input</SectionLabel>
             <div className="flex items-center gap-3">
               <span className="text-xs text-muted-foreground">
                 {getLineCount(input)} lines
@@ -455,9 +426,7 @@ export function TextFormatterSection({ mode }: TextFormatterSectionProps) {
         {/* Output panel */}
         <div className="flex-1 flex flex-col rounded-xl border border-border bg-card overflow-hidden min-w-0 min-h-[140px] sm:min-h-[200px] lg:min-h-0">
           <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-secondary/30">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Output
-            </span>
+            <SectionLabel>Output</SectionLabel>
             <div className="flex items-center gap-3">
               <span className="text-xs text-muted-foreground">
                 {getLineCount(output)} lines

@@ -5,6 +5,9 @@ import Image from "next/image";
 import firebase from "firebase/compat/app";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { ThemeSelector } from "@/components/theme-selector";
+import { SectionCard } from "@/components/ui/section-card";
+import { SectionLabel } from "@/components/ui/section-label";
 
 interface LoginSectionProps {
   provider: { name: string; type: string; firebaseApp: any };
@@ -50,7 +53,8 @@ export function LoginSection({
       {/* Background gradient */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-[40%] -left-[20%] h-[80%] w-[60%] rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute -bottom-[40%] -right-[20%] h-[80%] w-[60%] rounded-full bg-primary/3 blur-3xl" />
+        <div className="absolute -bottom-[40%] -right-[20%] h-[80%] w-[60%] rounded-full bg-info/5 blur-3xl" />
+        <div className="absolute top-[20%] right-[10%] h-[40%] w-[30%] rounded-full bg-success/3 blur-3xl" />
       </div>
 
       <div className="relative z-10 w-full max-w-md px-6">
@@ -72,20 +76,16 @@ export function LoginSection({
         </div>
 
         {/* Login Card */}
-        <div className="rounded-2xl border border-border bg-card/80 backdrop-blur-md p-8">
+        <SectionCard blur className="p-8">
           <div className="mb-6">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Provider
-            </label>
+            <SectionLabel as="label">Provider</SectionLabel>
             <div className="mt-2 flex items-center rounded-lg border border-border bg-secondary/50 px-4 py-2.5">
               <span className="text-sm text-foreground">{provider.name}</span>
             </div>
           </div>
 
           <div className="space-y-3">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Continue with
-            </p>
+            <SectionLabel as="p">Continue with</SectionLabel>
 
             <button
               onClick={handleGoogleSignIn}
@@ -101,11 +101,16 @@ export function LoginSection({
             </button>
 
           </div>
-        </div>
+        </SectionCard>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
           Maxion Platform &middot; Internal Developer Tool
         </p>
+
+        {/* Theme switcher */}
+        <div className="mt-5 max-w-[240px] mx-auto">
+          <ThemeSelector />
+        </div>
       </div>
     </div>
   );

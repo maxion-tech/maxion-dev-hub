@@ -9,6 +9,7 @@ import { LoginSection } from "@/components/login-section";
 import { AuthSection } from "@/components/auth-section";
 import { platformFirebase } from "@/config/firebase";
 import { providers, ProviderType } from "@/constants";
+import { useTheme } from "@/hooks/use-theme";
 
 function TabSkeleton() {
   return (
@@ -56,6 +57,7 @@ export default function Home() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [provider, setProvider] = useState<ProviderItem>(providers[0]);
+  const { theme } = useTheme();
 
   const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
 
@@ -106,7 +108,7 @@ export default function Home() {
           setRefreshToken={setRefreshToken}
           setEmail={setEmail}
         />
-        <Toaster theme="dark" position="bottom-right" richColors />
+        <Toaster theme={theme === "light" ? "light" : "dark"} position="bottom-right" richColors />
       </>
     );
   }

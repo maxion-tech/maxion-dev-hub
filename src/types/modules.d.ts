@@ -15,13 +15,6 @@ declare module "ethers" {
   }
 }
 
-declare module "web3-token" {
-  export function sign(
-    signer: (msg: string) => Promise<string>,
-    expiry: string
-  ): Promise<string>;
-}
-
 declare module "lodash" {
   export function camelCase(str: string): string;
   export function capitalize(str: string): string;

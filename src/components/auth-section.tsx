@@ -14,6 +14,9 @@ import {
 } from "lucide-react";
 import { ProviderType } from "@/constants";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
+import { SectionLabel } from "@/components/ui/section-label";
+import { SectionCard } from "@/components/ui/section-card";
+import { Button } from "@/components/ui/button";
 
 interface AuthSectionProps {
   token: string;
@@ -39,16 +42,14 @@ function CopyField({
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           {icon}
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            {label}
-          </span>
+          <SectionLabel>{label}</SectionLabel>
         </div>
         <button
           onClick={() => copy(value, label)}
           className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs text-muted-foreground transition-all hover:bg-secondary hover:text-foreground"
         >
           {copied ? (
-            <Check className="h-3 w-3 text-primary" />
+            <Check className="h-3 w-3 text-success" />
           ) : (
             <Copy className="h-3 w-3" />
           )}
@@ -107,7 +108,7 @@ export function AuthSection({
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* User card */}
-      <div className="rounded-2xl border border-border bg-card p-4 sm:p-6">
+      <SectionCard className="p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:justify-between">
           <div className="flex items-center gap-4 min-w-0">
             <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -118,32 +119,29 @@ export function AuthSection({
               <p className="text-sm text-muted-foreground">{provider.name}</p>
             </div>
           </div>
-          <button
-            onClick={handleSignOut}
-            className="flex items-center justify-center gap-2 rounded-lg border border-destructive/30 px-4 py-2 text-sm text-destructive transition-all hover:bg-destructive/10 shrink-0"
-          >
+          <Button variant="destructive" onClick={handleSignOut} className="shrink-0">
             <LogOut className="h-4 w-4" />
             Sign Out
-          </button>
+          </Button>
         </div>
-      </div>
+      </SectionCard>
 
       {/* Tokens */}
       <div className="space-y-3">
         <CopyField
           label="Google Account"
           value={email}
-          icon={<Mail className="h-3.5 w-3.5 text-primary" />}
+          icon={<Mail className="h-3.5 w-3.5 text-info" />}
         />
         <CopyField
           label="Access Token"
           value={token}
-          icon={<Key className="h-3.5 w-3.5 text-primary" />}
+          icon={<Key className="h-3.5 w-3.5 text-warning" />}
         />
         <CopyField
           label="Refresh Token"
           value={refreshToken}
-          icon={<RefreshCw className="h-3.5 w-3.5 text-primary" />}
+          icon={<RefreshCw className="h-3.5 w-3.5 text-success" />}
         />
       </div>
 
@@ -152,9 +150,7 @@ export function AuthSection({
         <div className="rounded-xl border border-border bg-secondary/30 p-4">
           <div className="flex items-center gap-2 mb-3">
             <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Platform User Data
-            </span>
+            <SectionLabel>Platform User Data</SectionLabel>
           </div>
           <pre className="rounded-lg bg-background/50 p-3 text-xs text-muted-foreground font-mono overflow-auto max-h-48">
             {JSON.stringify(userData, null, 2)}

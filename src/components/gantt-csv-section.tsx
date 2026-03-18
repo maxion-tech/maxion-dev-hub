@@ -4,6 +4,8 @@ import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { Play, Download, Trash2, AlertCircle } from "lucide-react";
 import { KbdShortcut } from "@/components/ui/kbd-shortcut";
+import { SectionLabel } from "@/components/ui/section-label";
+import { Button } from "@/components/ui/button";
 
 interface ParsedTask {
   name: string;
@@ -180,7 +182,7 @@ export function GanttCsvSection() {
       <div>
         <div className="flex items-start sm:items-center justify-between mb-2 gap-2">
           <div className="min-w-0">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Mermaid Gantt input</label>
+            <SectionLabel as="label">Mermaid Gantt input</SectionLabel>
             <p className="text-xs text-muted-foreground/60 mt-0.5 hidden sm:block">
               Paste a Mermaid gantt chart to export as ClickUp-compatible CSV. Supports{" "}
               <code className="font-mono text-primary/80 bg-primary/5 px-1 rounded">after</code>{" "}
@@ -216,29 +218,22 @@ export function GanttCsvSection() {
 
       {/* Actions */}
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-        <button
-          onClick={handleParse}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold transition-all hover:bg-primary/90"
-        >
+        <Button variant="primary" onClick={handleParse}>
           <Play className="h-4 w-4" />
           Parse
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={handleDownload}
           disabled={tasks.length === 0}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-transparent text-muted-foreground border border-border rounded-lg text-sm font-medium transition-all hover:text-foreground hover:bg-secondary disabled:opacity-40 disabled:pointer-events-none"
         >
           <Download className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Download</span> CSV
-        </button>
+        </Button>
         {input && (
-          <button
-            onClick={handleClear}
-            className="inline-flex items-center gap-2 px-3 py-2 text-muted-foreground text-sm transition-colors hover:text-foreground"
-          >
+          <Button variant="ghost" onClick={handleClear} className="px-3">
             <Trash2 className="h-3.5 w-3.5" />
             Clear
-          </button>
+          </Button>
         )}
         <span className="ml-auto flex items-center gap-3">
           {tasks.length > 0 && (
@@ -267,23 +262,23 @@ export function GanttCsvSection() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-secondary">
-                    <th className="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border">
-                      Task
+                    <th className="px-3 sm:px-4 py-3 text-left border-b border-border">
+                      <SectionLabel className="font-semibold">Task</SectionLabel>
                     </th>
-                    <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border">
-                      Section
+                    <th className="hidden md:table-cell px-4 py-3 text-left border-b border-border">
+                      <SectionLabel className="font-semibold">Section</SectionLabel>
                     </th>
-                    <th className="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border">
-                      Duration
+                    <th className="px-3 sm:px-4 py-3 text-left border-b border-border">
+                      <SectionLabel className="font-semibold">Duration</SectionLabel>
                     </th>
-                    <th className="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border">
-                      Start
+                    <th className="px-3 sm:px-4 py-3 text-left border-b border-border">
+                      <SectionLabel className="font-semibold">Start</SectionLabel>
                     </th>
-                    <th className="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border">
-                      Due
+                    <th className="px-3 sm:px-4 py-3 text-left border-b border-border">
+                      <SectionLabel className="font-semibold">Due</SectionLabel>
                     </th>
-                    <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border min-w-[160px]">
-                      Timeline
+                    <th className="hidden sm:table-cell px-4 py-3 text-left border-b border-border min-w-[160px]">
+                      <SectionLabel className="font-semibold">Timeline</SectionLabel>
                     </th>
                   </tr>
                 </thead>

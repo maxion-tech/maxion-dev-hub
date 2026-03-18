@@ -13,6 +13,7 @@ import {
   useSignMessage,
 } from "wagmi";
 import { parseUnits, formatUnits, maxUint256, type Address } from "viem";
+import { verify } from "@/utils/web3-token";
 // ethers is dynamically imported in signMetaMask to reduce initial bundle size
 import { SiweMessage, generateNonce } from "siwe";
 import {
@@ -40,6 +41,8 @@ import {
 } from "@/utils/cookies";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
 import { Dropdown } from "@/components/ui/dropdown";
+import { SectionLabel } from "@/components/ui/section-label";
+import { SectionCard } from "@/components/ui/section-card";
 
 // ─── Connect Wallet Modal ──────────────────────────────────────
 
@@ -159,7 +162,7 @@ function ConnectWalletModal({
                 {isConnecting ? (
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 ) : isDetected ? (
-                  <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-md bg-secondary border border-border">
+                  <span className="text-xs text-info px-2 py-0.5 rounded-md bg-info/10 border border-info/20">
                     Installed
                   </span>
                 ) : (
@@ -200,7 +203,6 @@ function Web3TokenSection({
 
   const parseMetaMaskExpiry = (token: string): Date | null => {
     try {
-      const { verify } = require("web3-token");
       const { body } = verify(token);
       if (body?.["expiration-time"]) return new Date(body["expiration-time"]);
     } catch {
@@ -232,7 +234,7 @@ function Web3TokenSection({
     const { ethers } = await import("ethers");
     const provider = new ethers.BrowserProvider(ethereum);
     const signer = await provider.getSigner();
-    const { sign } = await import("web3-token");
+    const { sign } = await import("@/utils/web3-token");
     const web3Token = await sign(
       async (msg: string) => await signer.signMessage(msg),
       "1d"
@@ -328,11 +330,9 @@ function Web3TokenSection({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
-          {label}
-        </span>
+        <SectionLabel>{label}</SectionLabel>
         {tokenExpiry && (
-          <span className={`text-xs ${isExpired ? "text-destructive" : "text-muted-foreground"}`}>
+          <span className={`text-xs ${isExpired ? "text-destructive" : "text-warning"}`}>
             {formatExpiry(tokenExpiry)}
           </span>
         )}
@@ -353,7 +353,7 @@ function Web3TokenSection({
             {walletToken}
           </p>
           <span className="shrink-0 text-muted-foreground group-hover:text-foreground transition-colors">
-            {copiedToken ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5" />}
+            {copiedToken ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
           </span>
         </button>
       )}
@@ -436,7 +436,7 @@ function ApprovalRow({
         </div>
         <span className="text-xs text-muted-foreground">
           Approval:{" "}
-          <span className={approved ? "text-primary" : "text-muted-foreground"}>
+          <span className={approved ? "text-success" : "text-muted-foreground"}>
             {approved === undefined ? "—" : approved ? "Approved" : "Not approved"}
           </span>
         </span>
@@ -458,7 +458,7 @@ function ApprovalRow({
           </>
         ) : (
           <>
-            <ShieldCheck className="h-3.5 w-3.5 text-primary/70" />
+            <ShieldCheck className="h-3.5 w-3.5 text-success/70" />
             <span>Approve</span>
           </>
         )}
@@ -594,7 +594,7 @@ function AllowanceRow({
             <span>
               Allowance:{" "}
               <span className={`font-mono ${
-                isUnlimited ? "text-primary" : isZero ? "text-muted-foreground" : "text-foreground/70"
+                isUnlimited ? "text-success" : isZero ? "text-muted-foreground" : "text-foreground/70"
               }`}>
                 {formattedAllowance}
               </span>
@@ -609,7 +609,7 @@ function AllowanceRow({
             title="Approve unlimited"
             className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-foreground transition-all hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <ShieldCheck className="h-3.5 w-3.5 text-primary/70" />
+            <ShieldCheck className="h-3.5 w-3.5 text-success/70" />
             <span className="hidden sm:inline">Unlimited</span>
           </button>
           <button
@@ -778,13 +778,13 @@ export function WalletSection() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* ── Connection status bar ── */}
-      <div className="rounded-2xl border border-border bg-card">
+      <SectionCard>
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4 sm:px-6">
           <div className="relative">
             <Wallet className="h-5 w-5 text-foreground/60" />
             {isConnected && (
-              <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary" />
+              <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-success" />
             )}
           </div>
           <div className="flex-1 min-w-0">
@@ -796,9 +796,9 @@ export function WalletSection() {
                 <span className="truncate hidden sm:inline">{address}</span>
                 <span className="sm:hidden">{address ? shortenAddress(address) : ""}</span>
                 {copiedAddress ? (
-                  <Check className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <Check className="h-3.5 w-3.5 text-success shrink-0" />
                 ) : (
-                  <Copy className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary shrink-0 transition-colors" />
+                  <Copy className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground shrink-0 transition-colors" />
                 )}
               </button>
             ) : (
@@ -826,12 +826,12 @@ export function WalletSection() {
 
         {/* Wrong chain warning */}
         {wrongChain && (
-          <div className="mx-5 mb-4 sm:mx-6 rounded-lg bg-primary/5 border border-primary/10 px-4 py-2.5">
+          <div className="mx-5 mb-4 sm:mx-6 rounded-lg bg-warning/5 border border-warning/15 px-4 py-2.5">
             <p className="text-xs text-foreground/80">
               Wrong network.{" "}
               <button
                 onClick={() => switchChain?.({ chainId: selectedChain.chainId })}
-                className="text-primary font-medium hover:underline underline-offset-2"
+                className="text-warning font-medium hover:underline underline-offset-2"
               >
                 Switch to {selectedChain.name}
               </button>
@@ -845,7 +845,7 @@ export function WalletSection() {
             <Web3TokenSection key={`${selectedChain.wallet}-${selectedChain.chainId}`} walletType={selectedChain.wallet} gameId={selectedGame.id} />
           </div>
         )}
-      </div>
+      </SectionCard>
 
       <ConnectWalletModal
         open={showConnectModal}
@@ -859,9 +859,9 @@ export function WalletSection() {
       <div className="space-y-6">
         {/* Chain selector — inline segments for 2 options */}
         <div>
-          <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2.5 block">
+          <SectionLabel as="label" className="mb-2.5 block">
             Chain
-          </label>
+          </SectionLabel>
           <div className="flex sm:inline-flex rounded-lg border border-border p-0.5">
             {chains.map((chain) => (
               <button
@@ -924,7 +924,7 @@ export function WalletSection() {
 
       {/* ── Approvals & Allowances ── */}
       {isConnected && selectedOperator.address && (
-        <div className="rounded-2xl border border-border bg-card px-5 sm:px-6">
+        <SectionCard className="px-5 sm:px-6">
           <div className="flex items-center justify-between py-4 pb-3.5 border-b border-border">
             <h3 className="text-sm font-semibold text-foreground">Approvals & Allowances</h3>
             <span className="text-xs text-muted-foreground font-mono">
@@ -959,7 +959,7 @@ export function WalletSection() {
               </p>
             </div>
           )}
-        </div>
+        </SectionCard>
       )}
     </div>
   );

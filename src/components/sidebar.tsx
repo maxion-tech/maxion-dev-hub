@@ -15,6 +15,7 @@ import {
   PanelLeftOpen,
   X,
 } from "lucide-react";
+import { ThemeSelector } from "@/components/theme-selector";
 
 interface NavItem {
   id: TabId;
@@ -27,37 +28,37 @@ const navItems: NavItem[] = [
   {
     id: "auth",
     label: "Auth",
-    icon: <ShieldCheck className="h-4 w-4 shrink-0" />,
+    icon: <ShieldCheck className="h-4 w-4 shrink-0 text-warning" />,
     group: "Authentication",
   },
   {
     id: "wallet",
     label: "Wallet",
-    icon: <Wallet className="h-4 w-4 shrink-0" />,
+    icon: <Wallet className="h-4 w-4 shrink-0 text-success" />,
     group: "Authentication",
   },
   {
     id: "delimiters",
     label: "Delimiters",
-    icon: <SplitSquareHorizontal className="h-4 w-4 shrink-0" />,
+    icon: <SplitSquareHorizontal className="h-4 w-4 shrink-0 text-info" />,
     group: "Dev Tools",
   },
   {
     id: "json",
     label: "JSON to String",
-    icon: <Braces className="h-4 w-4 shrink-0" />,
+    icon: <Braces className="h-4 w-4 shrink-0 text-info" />,
     group: "Dev Tools",
   },
   {
     id: "env",
     label: "ENV Converter",
-    icon: <FileCode2 className="h-4 w-4 shrink-0" />,
+    icon: <FileCode2 className="h-4 w-4 shrink-0 text-info" />,
     group: "Dev Tools",
   },
   {
     id: "gantt",
     label: "Gantt to CSV",
-    icon: <GanttChart className="h-4 w-4 shrink-0" />,
+    icon: <GanttChart className="h-4 w-4 shrink-0 text-info" />,
     group: "Dev Tools",
   },
 ];
@@ -180,17 +181,25 @@ export function Sidebar({
         ))}
       </nav>
 
-      {/* Collapse toggle (desktop only) */}
-      <div className="hidden md:block px-2 py-2 border-t border-border">
+      {/* Theme + Collapse */}
+      <div className={cn("border-t border-border", collapsed ? "p-1.5 space-y-1" : "px-4 py-3")}>
+        <ThemeSelector collapsed={collapsed} />
+        {/* Collapse toggle (desktop only) */}
         <button
           onClick={onToggleCollapse}
-          className="flex items-center justify-center w-full rounded-lg py-2 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+          className={cn(
+            "hidden md:flex items-center w-full rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors",
+            collapsed ? "justify-center p-2.5" : "gap-3 px-1.5 py-2 mt-1"
+          )}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? (
             <PanelLeftOpen className="h-4 w-4" />
           ) : (
-            <PanelLeftClose className="h-4 w-4" />
+            <>
+              <PanelLeftClose className="h-4 w-4" />
+              <span className="text-xs">Collapse</span>
+            </>
           )}
         </button>
       </div>
