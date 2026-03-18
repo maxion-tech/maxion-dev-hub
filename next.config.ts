@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "images.spr.so" },
     ],
   },
+  allowedDevOrigins: ["be.pawaret.uk", "maxion-dev-hub.vercel.app"],
+  turbopack: {},
   webpack: (config) => {
     // Stub out unused wagmi connector dependencies to avoid build errors
     config.resolve.fallback = {
