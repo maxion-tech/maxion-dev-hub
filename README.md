@@ -1,73 +1,93 @@
-# Demo
-https://maxion-firebase-oauth-demo.netlify.app/
+# Maxion Dev Hub
 
-# Getting Started with Create React App
+Internal developer tools & authentication hub for the Maxion Platform.
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Stack
 
-## Available Scripts
+- **Framework**: Next.js 15 (App Router) + React 18 + TypeScript
+- **Styling**: Tailwind CSS 3 + tailwindcss-animate
+- **UI**: Radix UI primitives + Lucide React icons
+- **Auth**: Firebase Auth (dual instances — Platform + CMS)
+- **Web3**: Wagmi 3 + Viem 2 + ethers.js 5 + web3-token
+- **Deploy**: Vercel
 
-In the project directory, you can run:
+## Getting Started
 
-### `npm start`
+### Prerequisites
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- Node.js 18+
+- npm
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### Environment Variables
 
-### `npm test`
+Create a `.env.local` file with the following:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```env
+# Platform Firebase
+NEXT_PUBLIC_PLATFORM_API_KEY=
+NEXT_PUBLIC_PLATFORM_AUTH_DOMAIN=
+NEXT_PUBLIC_PLATFORM_PROJECT_ID=
+NEXT_PUBLIC_PLATFORM_STORAGE_BUCKET=
+NEXT_PUBLIC_PLATFORM_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_PLATFORM_APP_ID=
 
-### `npm run build`
+# CMS Firebase
+NEXT_PUBLIC_CMS_API_KEY=
+NEXT_PUBLIC_CMS_AUTH_DOMAIN=
+NEXT_PUBLIC_CMS_PROJECT_ID=
+NEXT_PUBLIC_CMS_STORAGE_BUCKET=
+NEXT_PUBLIC_CMS_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_CMS_APP_ID=
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Install & Run
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```bash
+npm install
+npm run dev
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Open [http://localhost:3000](http://localhost:3000).
 
-### `npm run eject`
+## Scripts
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server |
+| `npm run build` | Production build |
+| `npm run start` | Start production server |
+| `npm run lint` | Run ESLint |
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Project Structure
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```
+src/
+├── app/                  # Next.js App Router (layout, page, globals)
+├── components/           # Feature-based client components
+│   ├── providers.tsx     # WagmiProvider + QueryClientProvider
+│   ├── sidebar.tsx       # Responsive nav sidebar
+│   ├── login-section.tsx # Firebase Google sign-in
+│   ├── auth-section.tsx  # Token display + user data
+│   ├── wallet-section.tsx      # Web3 wallet + allowance management
+│   ├── text-formatter-section.tsx  # Text/JSON/ENV converters
+│   └── gantt-csv-section.tsx       # Mermaid Gantt → ClickUp CSV
+├── config/               # Firebase & Wagmi configuration
+├── constants/            # Chains, contracts, ABIs
+├── lib/                  # Utilities (cn)
+├── utils/                # Cookie helpers
+└── types/                # Type declarations
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Features
 
-## Learn More
+- **Firebase Auth** — Google sign-in with token inspection for both Platform and CMS apps
+- **Web3 Wallet** — Connect MetaMask/Ronin, sign tokens, manage ERC-20 allowances
+- **Text Formatter** — Case conversion, JSON/ENV transformers
+- **Gantt CSV** — Convert Mermaid Gantt charts to ClickUp CSV format
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Supported Chains
 
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+| Chain | ID |
+|-------|----|
+| BSC Testnet | 97 |
+| Saigon Testnet | 202601 |
