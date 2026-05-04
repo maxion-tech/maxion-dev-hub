@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Copy, Check, KeyRound, RefreshCw, Info } from "lucide-react";
+import { Copy, Check, KeyRound, RefreshCw, Info, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Dropdown } from "@/components/ui/dropdown";
@@ -117,11 +117,16 @@ export function ApiKeySection() {
   const generate = useCallback(async () => {
     setGenerating(true);
     setCopied(null);
-    const prefix = noPrefix ? "" : buildPrefix(org, game, customGame);
-    const hexes = await Promise.all([fetchHex(length), fetchHex(length), fetchHex(length)]);
-    setResults(hexes.map((hex) => buildKey(prefix, hex)));
-    setGenerating(false);
-  }, [org, game, customGame, length]);
+    try {
+      const prefix = noPrefix ? "" : buildPrefix(org, game, customGame);
+      const hexes = await Promise.all([fetchHex(length), fetchHex(length), fetchHex(length)]);
+      setResults(hexes.map((hex) => buildKey(prefix, hex)));
+    } catch {
+      toast.error("Key generation failed — check API route");
+    } finally {
+      setGenerating(false);
+    }
+  }, [org, game, customGame, length, noPrefix]);
 
   const copy = useCallback(async (key: string, index: number) => {
     await navigator.clipboard.writeText(key);
@@ -211,7 +216,7 @@ export function ApiKeySection() {
                 )}
               >
                 <span className={cn(
-                  "absolute top-0.5 h-3 w-3 rounded-full bg-white transition-transform duration-150",
+                  "absolute top-0.5 h-3 w-3 rounded-full bg-foreground transition-transform duration-150",
                   noPrefix ? "translate-x-3.5" : "translate-x-0.5"
                 )} />
               </button>
@@ -270,7 +275,7 @@ export function ApiKeySection() {
           disabled={generating}
           className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground font-semibold py-2.5 text-sm hover:bg-primary/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <KeyRound className={cn("h-4 w-4", generating && "animate-spin")} />
+          {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
           {generating ? "Generating…" : "Generate"}
         </button>
       </div>
@@ -284,11 +289,12 @@ export function ApiKeySection() {
             </span>
             <button
               onClick={generate}
+              disabled={generating}
               aria-label="Regenerate keys"
               title="Regenerate"
-              className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-40 disabled:pointer-events-none"
             >
-              <RefreshCw className="h-4 w-4" />
+              {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             </button>
           </div>
           <div className="space-y-2">
