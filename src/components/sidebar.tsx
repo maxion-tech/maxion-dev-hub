@@ -11,6 +11,7 @@ import {
   Braces,
   FileCode2,
   GanttChart,
+  KeyRound,
   PanelLeftClose,
   PanelLeftOpen,
   X,
@@ -59,6 +60,12 @@ const navItems: NavItem[] = [
     id: "gantt",
     label: "Gantt to CSV",
     icon: <GanttChart className="h-4 w-4 shrink-0 text-info" />,
+    group: "Dev Tools",
+  },
+  {
+    id: "apikey",
+    label: "API Key Generator",
+    icon: <KeyRound className="h-4 w-4 shrink-0 text-info" />,
     group: "Dev Tools",
   },
 ];

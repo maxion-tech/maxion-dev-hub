@@ -33,8 +33,12 @@ const GanttCsvSection = dynamic(
   () => import("@/components/gantt-csv-section").then((m) => ({ default: m.GanttCsvSection })),
   { ssr: false, loading: () => <TabSkeleton /> }
 );
+const ApiKeySection = dynamic(
+  () => import("@/components/api-key-section").then((m) => ({ default: m.ApiKeySection })),
+  { ssr: false, loading: () => <TabSkeleton /> }
+);
 
-export type TabId = "auth" | "wallet" | "delimiters" | "json" | "env" | "gantt";
+export type TabId = "auth" | "wallet" | "delimiters" | "json" | "env" | "gantt" | "apikey";
 
 const tabLabels: Record<TabId, string> = {
   auth: "Authentication",
@@ -43,6 +47,7 @@ const tabLabels: Record<TabId, string> = {
   json: "JSON to String",
   env: "ENV Converter",
   gantt: "Gantt to CSV",
+  apikey: "API Key Generator",
 };
 
 type ProviderItem = (typeof providers)[number];
@@ -155,6 +160,7 @@ export default function Home() {
           {activeTab === "json" && <TextFormatterSection mode="json" />}
           {activeTab === "env" && <TextFormatterSection mode="env" />}
           {activeTab === "gantt" && <GanttCsvSection />}
+          {activeTab === "apikey" && <ApiKeySection />}
         </div>
       </main>
       <Toaster theme="dark" position="bottom-right" richColors />
