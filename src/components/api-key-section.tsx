@@ -109,6 +109,7 @@ export function ApiKeySection() {
   const [game, setGame] = useState<GameOption>(GAME_OPTIONS[0]);
   const [customGame, setCustomGame] = useState("");
   const [length, setLength] = useState<KeyLength>(32);
+  const [noPrefix, setNoPrefix] = useState(false);
   const [results, setResults] = useState<string[]>([]);
   const [copied, setCopied] = useState<number | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -116,7 +117,7 @@ export function ApiKeySection() {
   const generate = useCallback(async () => {
     setGenerating(true);
     setCopied(null);
-    const prefix = buildPrefix(org, game, customGame);
+    const prefix = noPrefix ? "" : buildPrefix(org, game, customGame);
     const hexes = await Promise.all([fetchHex(length), fetchHex(length), fetchHex(length)]);
     setResults(hexes.map((hex) => buildKey(prefix, hex)));
     setGenerating(false);
@@ -153,7 +154,7 @@ export function ApiKeySection() {
       <div className="rounded-xl border border-border bg-card p-6">
         {/* Section: Prefix + Game */}
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className={cn("grid grid-cols-2 gap-3 transition-opacity", noPrefix && "opacity-40 pointer-events-none")}>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Prefix
@@ -181,7 +182,7 @@ export function ApiKeySection() {
             </div>
           </div>
 
-          {game.value === "__custom__" && (
+          {!noPrefix && game.value === "__custom__" && (
             <input
               type="text"
               value={customGame}
@@ -191,9 +192,31 @@ export function ApiKeySection() {
             />
           )}
 
-          <p className="text-xs text-muted-foreground">
-            Format: <span className="font-mono text-foreground/80">{formatPreview}</span>
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">
+              Format:{" "}
+              <span className="font-mono text-foreground/80">
+                {noPrefix ? "<random>" : formatPreview}
+              </span>
+            </p>
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <span className="text-xs text-muted-foreground">No prefix</span>
+              <button
+                role="switch"
+                aria-checked={noPrefix}
+                onClick={() => setNoPrefix((v) => !v)}
+                className={cn(
+                  "relative inline-flex h-4 w-7 shrink-0 rounded-full border transition-colors",
+                  noPrefix ? "bg-primary border-primary" : "bg-secondary border-border"
+                )}
+              >
+                <span className={cn(
+                  "absolute top-0.5 h-3 w-3 rounded-full bg-white transition-transform duration-150",
+                  noPrefix ? "translate-x-3.5" : "translate-x-0.5"
+                )} />
+              </button>
+            </label>
+          </div>
         </div>
 
         {/* Divider — separates prefix config from length config */}
