@@ -12,7 +12,7 @@ const GAME_OPTIONS = [
   { label: "Ragnarok Landverse Thai", value: "rolth" },
   { label: "Ragnarok Landverse Genesis", value: "rolg" },
   { label: "Ragnarok Landverse America", value: "rola" },
-  { label: "Dragonica", value: "drg" },
+  { label: "Dragonica", value: "drlv" },
   { label: "Custom…", value: "__custom__" },
   { label: "No game prefix", value: "__none__" },
 ] as const;
