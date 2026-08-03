@@ -33,6 +33,12 @@ const brackets = [
   { value: "curly", label: "Curly Braces { }", symbols: ["{", "}"] },
 ];
 
+const quotes = [
+  { value: "none", label: "No Quotes", symbol: "" },
+  { value: "double", label: 'Double (")', symbol: '"' },
+  { value: "single", label: "Single (')", symbol: "'" },
+];
+
 interface TextFormatterSectionProps {
   mode: "delimiters" | "json" | "env";
 }
@@ -45,7 +51,7 @@ export function TextFormatterSection({ mode }: TextFormatterSectionProps) {
   const [selectedTextCase, setSelectedTextCase] = useState(
     TEXT_CASE_OPTIONS.find((o) => o.value === DEFAULT_TEXT_CASE) || TEXT_CASE_OPTIONS[0]
   );
-  const [isString, setIsString] = useState(false);
+  const [selectedQuote, setSelectedQuote] = useState(quotes[0]);
   const [removeDuplicates, setRemoveDuplicates] = useState(false);
   const [convertToLines, setConvertToLines] = useState(false);
   const [splitByLines, setSplitByLines] = useState(true);
@@ -157,13 +163,15 @@ export function TextFormatterSection({ mode }: TextFormatterSectionProps) {
 
     items = items.map((item) => applyTextCase(item));
 
+    const q = selectedQuote.symbol;
+
     if (convertToLines) {
-      setOutput(items.map((i) => (isString ? `"${i}"` : i)).join("\n"));
+      setOutput(items.map((i) => `${q}${i}${q}`).join("\n"));
       return;
     }
 
     const joined = items
-      .map((i) => (isString ? `"${i}"` : i))
+      .map((i) => `${q}${i}${q}`)
       .join(selectedSymbol.value);
 
     const [left, right] = selectedBracket.symbols;
@@ -175,7 +183,7 @@ export function TextFormatterSection({ mode }: TextFormatterSectionProps) {
     splitByLines,
     removeDuplicates,
     convertToLines,
-    isString,
+    selectedQuote,
     selectedSymbol,
     selectedBracket,
     applyTextCase,
@@ -241,10 +249,11 @@ export function TextFormatterSection({ mode }: TextFormatterSectionProps) {
         : input.split(/\s+|,/).filter(Boolean);
       if (removeDuplicates) items = Array.from(new Set(items));
       items = items.map((item) => applyTextCase(item));
+      const q = selectedQuote.symbol;
       if (convertToLines) {
-        result = items.map((i) => (isString ? `"${i}"` : i)).join("\n");
+        result = items.map((i) => `${q}${i}${q}`).join("\n");
       } else {
-        const joined = items.map((i) => (isString ? `"${i}"` : i)).join(selectedSymbol.value);
+        const joined = items.map((i) => `${q}${i}${q}`).join(selectedSymbol.value);
         const [left, right] = selectedBracket.symbols;
         result = left + joined + right;
       }
@@ -254,7 +263,7 @@ export function TextFormatterSection({ mode }: TextFormatterSectionProps) {
     if (!result.startsWith("Error:")) {
       copy(result);
     }
-  }, [input, isJsonMode, isEnvMode, splitByLines, removeDuplicates, convertToLines, isString, selectedSymbol, selectedBracket, applyTextCase, copy]);
+  }, [input, isJsonMode, isEnvMode, splitByLines, removeDuplicates, convertToLines, selectedQuote, selectedSymbol, selectedBracket, applyTextCase, copy]);
 
   // Keyboard shortcut: Cmd/Ctrl+Enter to convert & copy
   useEffect(() => {
@@ -320,6 +329,17 @@ export function TextFormatterSection({ mode }: TextFormatterSectionProps) {
             </div>
             <div className="flex-1 min-w-[8rem]">
               <SectionLabel as="span" className="block mb-1.5">
+                Quotes
+              </SectionLabel>
+              <Dropdown
+                value={selectedQuote}
+                options={quotes}
+                onChange={setSelectedQuote}
+                size="sm"
+              />
+            </div>
+            <div className="flex-1 min-w-[8rem]">
+              <SectionLabel as="span" className="block mb-1.5">
                 Case
               </SectionLabel>
               <Dropdown
@@ -342,11 +362,6 @@ export function TextFormatterSection({ mode }: TextFormatterSectionProps) {
                 label="Split by Lines"
                 checked={splitByLines}
                 onChange={setSplitByLines}
-              />
-              <ToggleSwitch
-                label="Quotes"
-                checked={isString}
-                onChange={setIsString}
               />
               <ToggleSwitch
                 label="Dedup"
