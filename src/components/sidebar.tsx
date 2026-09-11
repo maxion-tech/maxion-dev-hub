@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import type { TabId } from "@/app/page";
+import type { TabId } from "@/app/[[...tab]]/page";
 import {
   ShieldCheck,
   Wallet,

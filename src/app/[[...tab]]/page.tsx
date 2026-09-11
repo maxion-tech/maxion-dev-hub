@@ -62,6 +62,9 @@ const tabLabels: Record<TabId, string> = {
   "access-control": "Access Control",
 };
 
+// Tabs that live in the Ops Tools group and are gated by Access Control
+const OPS_TAB_IDS: TabId[] = ["nft-ownership", "access-control"];
+
 type ProviderItem = (typeof providers)[number];
 
 export default function Home() {
@@ -73,6 +76,25 @@ export default function Home() {
   // Ops Tools access for the signed-in account (managed in the Access Control tab)
   const [opsAccess, setOpsAccess] = useState<OpsAccess | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>("auth");
+
+  // Each tab has its own URL (/nft-ownership, /wallet, …) served by the [[...tab]] catch-all.
+  // Sync state <-> URL without a full navigation so the page (and Firebase session) stays mounted.
+  const navigateTab = useCallback((id: TabId) => {
+    setActiveTab(id);
+    const path = id === "auth" ? "/" : `/${id}`;
+    if (typeof window !== "undefined" && window.location.pathname !== path) window.history.pushState(null, "", path);
+  }, []);
+
+  useEffect(() => {
+    const fromPath = (): TabId => {
+      const seg = window.location.pathname.replace(/^\/+|\/+$/g, "");
+      return (Object.keys(tabLabels) as string[]).includes(seg) ? (seg as TabId) : "auth";
+    };
+    setActiveTab(fromPath());
+    const onPop = () => setActiveTab(fromPath());
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
   useEffect(() => {
     if (!email || !canUseOpsTools(email)) {
@@ -87,6 +109,14 @@ export default function Home() {
       cancelled = true;
     };
   }, [email]);
+
+  useEffect(() => {
+    if (!opsAccess) return;
+    const blocked =
+      (activeTab === "access-control" && opsAccess.role !== "admin") ||
+      (activeTab !== "access-control" && activeTab !== "auth" && OPS_TAB_IDS.includes(activeTab) && !canUseFeature(opsAccess, activeTab));
+    if (blocked) navigateTab("auth");
+  }, [opsAccess, activeTab, navigateTab]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [provider, setProvider] = useState<ProviderItem>(providers[0]);
@@ -150,7 +180,7 @@ export default function Home() {
     <div className="flex h-screen bg-background">
       <Sidebar
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={navigateTab}
         email={email}
               opsAccess={opsAccess}
         collapsed={sidebarCollapsed}
