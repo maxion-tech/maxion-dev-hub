@@ -109,3 +109,12 @@ export const games: Record<number, Game[]> = {
     },
   ],
 };
+
+// ─── Ops Tools access ───────────────────────────────────────────
+// เมนูกลุ่ม "Ops Tools" (เช่น Webhook Replay) โชว์เฉพาะผู้ใช้ที่ login ด้วยอีเมลโดเมนเหล่านี้
+export const OPS_TOOLS_EMAIL_DOMAINS = ["maxion.tech"] as const;
+
+export function canUseOpsTools(email: string | null | undefined): boolean {
+  const domain = (email ?? "").trim().toLowerCase().split("@")[1];
+  return !!domain && OPS_TOOLS_EMAIL_DOMAINS.some((d) => d === domain);
+}

@@ -102,6 +102,10 @@ All prefixed with `NEXT_PUBLIC_` (client-side accessible):
 - `NEXT_PUBLIC_PLATFORM_*` — Platform Firebase config
 - `NEXT_PUBLIC_CMS_*` — CMS Firebase config
 
+Server-side only (never `NEXT_PUBLIC_`), read by `src/app/api/platform-support/[...path]/route.ts` (proxy for tools used by the support team):
+- `MAXION_PLATFORM_SUPPORT_URL` — maxion-platform-support base URL
+- `MAXION_PLATFORM_SUPPORT_TOKEN` — its `ADMIN_TOKEN`; the route verifies the caller's Firebase ID token and `canUseOpsTools()` before proxying
+
 ## Code Style Rules
 
 - **TypeScript strict mode** — no implicit any, explicit return types on async functions.

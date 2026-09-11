@@ -8,7 +8,7 @@ import { Sidebar } from "@/components/sidebar";
 import { LoginSection } from "@/components/login-section";
 import { AuthSection } from "@/components/auth-section";
 import { platformFirebase } from "@/config/firebase";
-import { providers, ProviderType } from "@/constants";
+import { providers, ProviderType, canUseOpsTools } from "@/constants";
 import { useTheme } from "@/hooks/use-theme";
 
 function TabSkeleton() {
@@ -37,8 +37,12 @@ const ApiKeySection = dynamic(
   () => import("@/components/api-key-section").then((m) => ({ default: m.ApiKeySection })),
   { ssr: false, loading: () => <TabSkeleton /> }
 );
+const NftOwnershipSection = dynamic(
+  () => import("@/components/nft-ownership-section").then((m) => ({ default: m.NftOwnershipSection })),
+  { ssr: false, loading: () => <TabSkeleton /> }
+);
 
-export type TabId = "auth" | "wallet" | "delimiters" | "json" | "env" | "gantt" | "apikey";
+export type TabId = "auth" | "wallet" | "delimiters" | "json" | "env" | "gantt" | "apikey" | "nft-ownership";
 
 const tabLabels: Record<TabId, string> = {
   auth: "Authentication",
@@ -48,6 +52,7 @@ const tabLabels: Record<TabId, string> = {
   env: "ENV Converter",
   gantt: "Gantt to CSV",
   apikey: "API Key Generator",
+  "nft-ownership": "NFT Ownership Check",
 };
 
 type ProviderItem = (typeof providers)[number];
@@ -161,6 +166,7 @@ export default function Home() {
           {activeTab === "env" && <TextFormatterSection mode="env" />}
           {activeTab === "gantt" && <GanttCsvSection />}
           {activeTab === "apikey" && <ApiKeySection />}
+          {activeTab === "nft-ownership" && canUseOpsTools(email) && <NftOwnershipSection />}
         </div>
       </main>
       <Toaster theme="dark" position="bottom-right" richColors />

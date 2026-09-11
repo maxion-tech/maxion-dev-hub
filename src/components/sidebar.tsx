@@ -12,11 +12,13 @@ import {
   FileCode2,
   GanttChart,
   KeyRound,
+  ScanSearch,
   PanelLeftClose,
   PanelLeftOpen,
   X,
 } from "lucide-react";
 import { ThemeSelector } from "@/components/theme-selector";
+import { canUseOpsTools } from "@/constants";
 
 interface NavItem {
   id: TabId;
@@ -68,6 +70,12 @@ const navItems: NavItem[] = [
     icon: <KeyRound className="h-4 w-4 shrink-0 text-info" />,
     group: "Dev Tools",
   },
+  {
+    id: "nft-ownership",
+    label: "NFT Ownership Check",
+    icon: <ScanSearch className="h-4 w-4 shrink-0 text-info" />,
+    group: "Ops Tools",
+  },
 ];
 
 interface SidebarProps {
@@ -89,7 +97,9 @@ export function Sidebar({
   mobileOpen,
   onMobileClose,
 }: SidebarProps) {
-  const groups = Array.from(new Set(navItems.map((item) => item.group)));
+  // กลุ่ม Ops Tools โชว์เฉพาะอีเมลโดเมนที่อนุญาต (ดู OPS_TOOLS_EMAIL_DOMAINS)
+  const visibleItems = navItems.filter((item) => item.group !== "Ops Tools" || canUseOpsTools(email));
+  const groups = Array.from(new Set(visibleItems.map((item) => item.group)));
 
   // Lock body scroll when mobile drawer is open
   useEffect(() => {
@@ -161,7 +171,7 @@ export function Sidebar({
               </p>
             )}
             <div className="space-y-0.5">
-              {navItems
+              {visibleItems
                 .filter((item) => item.group === group)
                 .map((item) => (
                   <button
