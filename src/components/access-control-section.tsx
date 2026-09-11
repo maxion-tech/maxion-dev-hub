@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Download, Loader2, Lock, LockOpen, Plus, RefreshCw, ShieldCheck, Trash2, Upload, UserRound } from "lucide-react";
+import { Download, Loader2, Lock, LockOpen, Plus, RefreshCw, ShieldCheck, ShieldOff, Trash2, Upload, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog, type ConfirmOptions } from "@/components/ui/confirm-dialog";
 import { SectionLabel } from "@/components/ui/section-label";
 import { OPS_FEATURES } from "@/constants/ops-tools";
 import { platformSupportApi } from "@/lib/platform-support";
@@ -61,6 +62,20 @@ export function AccessControlSection({ currentEmail }: { currentEmail: string })
   const [policyBusy, setPolicyBusy] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Confirmation modal: askConfirm() resolves true/false when the user answers
+  const [confirmState, setConfirmState] = useState<(ConfirmOptions & { busy: boolean }) | null>(null);
+  const confirmResolver = useRef<((ok: boolean) => void) | null>(null);
+  const askConfirm = (opts: ConfirmOptions) =>
+    new Promise<boolean>((resolve) => {
+      confirmResolver.current = resolve;
+      setConfirmState({ ...opts, busy: false });
+    });
+  const answerConfirm = (ok: boolean) => {
+    confirmResolver.current?.(ok);
+    confirmResolver.current = null;
+    setConfirmState(null);
+  };
+
   const isRestricted = (featureId: string) => policies[featureId]?.restricted === true;
   const restrictedFeatures = OPS_FEATURES.filter((f) => isRestricted(f.id));
 
@@ -108,8 +123,37 @@ export function AccessControlSection({ currentEmail }: { currentEmail: string })
   async function setRestricted(featureId: string, restricted: boolean) {
     const f = OPS_FEATURES.find((x) => x.id === featureId);
     const label = f?.label ?? featureId;
-    if (restricted && !window.confirm(`Restrict "${label}"? Only admins and people ticked below will be able to use it.`)) return;
-    if (!restricted && !window.confirm(`Open "${label}" to everyone at @maxion.tech?`)) return;
+    const grantedCount = users.filter((u) => u.role !== "admin" && u.features.includes(featureId)).length;
+    const ok = await askConfirm(
+      restricted
+        ? {
+            title: `Restrict “${label}”?`,
+            tone: "warning",
+            icon: <Lock className="h-5 w-5" />,
+            confirmLabel: "Restrict tool",
+            description: (
+              <>
+                Only admins and the people ticked for this tool will be able to open it.{" "}
+                {grantedCount > 0 ? (
+                  <>
+                    Right now that is <b className="text-foreground">{grantedCount}</b> {grantedCount === 1 ? "person" : "people"} plus admins.
+                  </>
+                ) : (
+                  <>Nobody is ticked yet, so until you add someone only admins can use it.</>
+                )}{" "}
+                Everyone else loses access on their next page load.
+              </>
+            ),
+          }
+        : {
+            title: `Open “${label}” to everyone?`,
+            tone: "primary",
+            icon: <LockOpen className="h-5 w-5" />,
+            confirmLabel: "Open to everyone",
+            description: <>Every signed-in @maxion.tech account will be able to use this tool. The ticks below are kept, so you can restrict it again later without re-adding people.</>,
+          }
+    );
+    if (!ok) return;
     setPolicyBusy(featureId);
     try {
       const saved = await platformSupportApi<FeaturePolicy>(`acl/features/${encodeURIComponent(featureId)}`, { method: "PUT", body: { restricted } });
@@ -123,7 +167,18 @@ export function AccessControlSection({ currentEmail }: { currentEmail: string })
   }
 
   async function remove(email: string) {
-    if (!window.confirm(`Remove all access for ${email}?`)) return;
+    const ok = await askConfirm({
+      title: "Remove this person?",
+      tone: "destructive",
+      icon: <Trash2 className="h-5 w-5" />,
+      confirmLabel: "Remove",
+      description: (
+        <>
+          <span className="font-mono text-foreground">{email}</span> will lose access to every restricted tool and any admin role. Tools that are open to everyone stay available to them.
+        </>
+      ),
+    });
+    if (!ok) return;
     setBusy(email);
     try {
       await platformSupportApi(`acl/users/${encodeURIComponent(email)}`, { method: "DELETE" });
@@ -170,7 +225,18 @@ export function AccessControlSection({ currentEmail }: { currentEmail: string })
     try {
       const parsed = JSON.parse(await file.text()) as { users?: AclEntry[]; features?: FeaturePolicy[] };
       if (!Array.isArray(parsed.users)) throw new Error("File must contain a \"users\" array");
-      if (!window.confirm(`Import ${parsed.users.length} entr${parsed.users.length === 1 ? "y" : "ies"} and tool settings? Existing entries with the same email are overwritten.`)) return;
+      const ok = await askConfirm({
+        title: "Import this backup?",
+        tone: "warning",
+        icon: <Upload className="h-5 w-5" />,
+        confirmLabel: "Import",
+        description: (
+          <>
+            {parsed.users.length} {parsed.users.length === 1 ? "person" : "people"} and {parsed.features?.length ?? 0} tool setting{(parsed.features?.length ?? 0) === 1 ? "" : "s"} will be written. Existing entries with the same email are overwritten; nothing is deleted.
+          </>
+        ),
+      });
+      if (!ok) return;
       const res = await platformSupportApi<{ imported: number }>("acl/import", { method: "POST", body: { users: parsed.users, features: parsed.features ?? [] } });
       toast.success(`Imported ${res.imported} entr${res.imported === 1 ? "y" : "ies"}`);
       void load();
@@ -186,13 +252,38 @@ export function AccessControlSection({ currentEmail }: { currentEmail: string })
     void save(u.email, u.role, features);
   };
 
-  const toggleAdmin = (u: AclEntry) => {
+  const toggleAdmin = async (u: AclEntry) => {
     if (u.email === currentEmail.toLowerCase() && u.role === "admin") {
       toast.error("You cannot remove your own admin role");
       return;
     }
     const next = u.role === "admin" ? "user" : "admin";
-    if (!window.confirm(next === "admin" ? `Make ${u.email} an admin? Admins can use every tool and manage this list.` : `Remove admin from ${u.email}?`)) return;
+    const ok = await askConfirm(
+      next === "admin"
+        ? {
+            title: "Make this person an admin?",
+            tone: "primary",
+            icon: <ShieldCheck className="h-5 w-5" />,
+            confirmLabel: "Make admin",
+            description: (
+              <>
+                <span className="font-mono text-foreground">{u.email}</span> will be able to use every tool, restrict tools, and edit this page.
+              </>
+            ),
+          }
+        : {
+            title: "Remove admin role?",
+            tone: "warning",
+            icon: <ShieldOff className="h-5 w-5" />,
+            confirmLabel: "Remove admin",
+            description: (
+              <>
+                <span className="font-mono text-foreground">{u.email}</span> becomes a normal user and keeps only the tools ticked in the table.
+              </>
+            ),
+          }
+    );
+    if (!ok) return;
     void save(u.email, next, u.features);
   };
 
@@ -374,6 +465,21 @@ export function AccessControlSection({ currentEmail }: { currentEmail: string })
           Only @maxion.tech accounts can sign in at all. Ticks only matter for restricted tools. Keep an Export as a backup — if the store is ever lost, every tool reopens to everyone and only the permanent admin can edit this page.
         </p>
       </div>
+
+      {confirmState && (
+        <ConfirmDialog
+          open
+          title={confirmState.title}
+          description={confirmState.description}
+          confirmLabel={confirmState.confirmLabel}
+          cancelLabel={confirmState.cancelLabel}
+          tone={confirmState.tone}
+          icon={confirmState.icon}
+          busy={confirmState.busy}
+          onConfirm={() => answerConfirm(true)}
+          onCancel={() => answerConfirm(false)}
+        />
+      )}
     </div>
   );
 }
