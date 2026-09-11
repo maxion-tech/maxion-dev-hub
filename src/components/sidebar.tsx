@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import type { TabId } from "@/app/[[...tab]]/page";
@@ -12,9 +12,11 @@ import {
   FileCode2,
   GanttChart,
   KeyRound,
+  Webhook,
   ScanSearch,
   PanelLeftClose,
   PanelLeftOpen,
+  ChevronDown,
   X,
 } from "lucide-react";
 import { ThemeSelector } from "@/components/theme-selector";
@@ -71,6 +73,12 @@ const navItems: NavItem[] = [
     group: "Dev Tools",
   },
   {
+    id: "webhook-replay",
+    label: "Webhook Replay",
+    icon: <Webhook className="h-4 w-4 shrink-0 text-warning" />,
+    group: "Ops Tools",
+  },
+  {
     id: "nft-ownership",
     label: "NFT Ownership Check",
     icon: <ScanSearch className="h-4 w-4 shrink-0 text-info" />,
@@ -83,6 +91,28 @@ const navItems: NavItem[] = [
     group: "Ops Tools",
   },
 ];
+
+// จำสถานะยุบ/ขยายของแต่ละกลุ่มเมนูไว้ใน localStorage (เก็บเฉพาะกลุ่มที่ "ยุบ")
+const COLLAPSED_GROUPS_KEY = "sidebar-collapsed-groups";
+
+function readCollapsedGroups(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = localStorage.getItem(COLLAPSED_GROUPS_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(parsed) ? parsed.filter((g): g is string => typeof g === "string") : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function writeCollapsedGroups(groups: Set<string>) {
+  try {
+    localStorage.setItem(COLLAPSED_GROUPS_KEY, JSON.stringify(Array.from(groups)));
+  } catch {
+    // ignore (private mode / storage blocked)
+  }
+}
 
 interface SidebarProps {
   activeTab: TabId;
@@ -112,6 +142,35 @@ export function Sidebar({
     return canUseFeature(opsAccess, item.id);
   });
   const groups = Array.from(new Set(visibleItems.map((item) => item.group)));
+
+  // กลุ่มเมนูที่ถูกยุบอยู่ — อ่านจาก localStorage หลัง mount เพื่อเลี่ยง hydration mismatch
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    setCollapsedGroups(readCollapsedGroups());
+  }, []);
+
+  const toggleGroup = (group: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(group)) next.delete(group);
+      else next.add(group);
+      writeCollapsedGroups(next);
+      return next;
+    });
+  };
+
+  // ถ้า tab ที่ active อยู่ในกลุ่มที่ยุบไว้ ให้ขยายกลุ่มนั้นออกมาเสมอ จะได้ไม่ซ่อนเมนูที่กำลังใช้อยู่
+  const activeGroup = navItems.find((item) => item.id === activeTab)?.group;
+  useEffect(() => {
+    if (!activeGroup) return;
+    setCollapsedGroups((prev) => {
+      if (!prev.has(activeGroup)) return prev;
+      const next = new Set(prev);
+      next.delete(activeGroup);
+      writeCollapsedGroups(next);
+      return next;
+    });
+  }, [activeGroup]);
 
   // Lock body scroll when mobile drawer is open
   useEffect(() => {
@@ -175,14 +234,30 @@ export function Sidebar({
 
       {/* Navigation */}
       <nav className={cn("flex-1 overflow-y-auto", collapsed ? "p-1.5 space-y-3" : "p-3 space-y-5")}>
-        {groups.map((group) => (
+        {groups.map((group) => {
+          // ตอน sidebar ย่อเป็นไอคอน ไม่มีหัวกลุ่มให้กด จึงโชว์ทุกเมนูเสมอ
+          const isGroupOpen = collapsed || !collapsedGroups.has(group);
+          const groupId = `sidebar-group-${group.toLowerCase().replace(/\s+/g, "-")}`;
+          return (
           <div key={group}>
             {!collapsed && (
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-2">
-                {group}
-              </p>
+              <button
+                type="button"
+                onClick={() => toggleGroup(group)}
+                aria-expanded={isGroupOpen}
+                aria-controls={groupId}
+                className="flex items-center justify-between w-full rounded-md px-3 py-1 mb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground hover:bg-secondary/60 transition-colors"
+              >
+                <span>{group}</span>
+                <ChevronDown
+                  className={cn(
+                    "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
+                    !isGroupOpen && "-rotate-90"
+                  )}
+                />
+              </button>
             )}
-            <div className="space-y-0.5">
+            <div id={groupId} className={cn("space-y-0.5", !isGroupOpen && "hidden")}>
               {visibleItems
                 .filter((item) => item.group === group)
                 .map((item) => (
@@ -199,15 +274,20 @@ export function Sidebar({
                     )}
                   >
                     {item.icon}
-                    {!collapsed && <span>{item.label}</span>}
+                    {!collapsed && (
+                      <span className="flex-1 min-w-0 truncate text-left" title={item.label}>
+                        {item.label}
+                      </span>
+                    )}
                     {!collapsed && activeTab === item.id && (
-                      <div className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
+                      <div className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
                     )}
                   </button>
                 ))}
             </div>
           </div>
-        ))}
+          );
+        })}
       </nav>
 
       {/* Theme + Collapse */}

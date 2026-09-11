@@ -39,6 +39,10 @@ const ApiKeySection = dynamic(
   () => import("@/components/api-key-section").then((m) => ({ default: m.ApiKeySection })),
   { ssr: false, loading: () => <TabSkeleton /> }
 );
+const WebhookReplaySection = dynamic(
+  () => import("@/components/webhook-replay-section").then((m) => ({ default: m.WebhookReplaySection })),
+  { ssr: false, loading: () => <TabSkeleton /> }
+);
 const NftOwnershipSection = dynamic(
   () => import("@/components/nft-ownership-section").then((m) => ({ default: m.NftOwnershipSection })),
   { ssr: false, loading: () => <TabSkeleton /> }
@@ -48,7 +52,7 @@ const AccessControlSection = dynamic(
   { ssr: false, loading: () => <TabSkeleton /> }
 );
 
-export type TabId = "auth" | "wallet" | "delimiters" | "json" | "env" | "gantt" | "apikey" | "nft-ownership" | "access-control";
+export type TabId = "auth" | "wallet" | "delimiters" | "json" | "env" | "gantt" | "apikey" | "webhook-replay" | "nft-ownership" | "access-control";
 
 const tabLabels: Record<TabId, string> = {
   auth: "Authentication",
@@ -58,12 +62,13 @@ const tabLabels: Record<TabId, string> = {
   env: "ENV Converter",
   gantt: "Gantt to CSV",
   apikey: "API Key Generator",
+  "webhook-replay": "Webhook Replay",
   "nft-ownership": "NFT Ownership Check",
   "access-control": "Access Control",
 };
 
 // Tabs that live in the Ops Tools group and are gated by Access Control
-const OPS_TAB_IDS: TabId[] = ["nft-ownership", "access-control"];
+const OPS_TAB_IDS: TabId[] = ["webhook-replay", "nft-ownership", "access-control"];
 
 type ProviderItem = (typeof providers)[number];
 
@@ -220,6 +225,7 @@ export default function Home() {
           {activeTab === "env" && <TextFormatterSection mode="env" />}
           {activeTab === "gantt" && <GanttCsvSection />}
           {activeTab === "apikey" && <ApiKeySection />}
+          {activeTab === "webhook-replay" && canUseFeature(opsAccess, "webhook-replay") && <WebhookReplaySection />}
           {activeTab === "nft-ownership" && canUseFeature(opsAccess, "nft-ownership") && <NftOwnershipSection />}
           {activeTab === "access-control" && opsAccess?.role === "admin" && <AccessControlSection currentEmail={email} />}
         </div>
