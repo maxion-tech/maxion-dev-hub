@@ -7,6 +7,9 @@ import {
   Copy,
   Check,
   Trash2,
+  Sparkles,
+  ExternalLink,
+  X,
 } from "lucide-react";
 import { TEXT_CASES, TEXT_CASE_OPTIONS, DEFAULT_TEXT_CASE, type TextCaseValue } from "@/constants/text-cases";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
@@ -39,6 +42,10 @@ const quotes = [
   { value: "single", label: "Single (')", symbol: "'" },
 ];
 
+// โฆษณาเบาๆ: ถ้าใช้ VS Code / Cursor / VSCodium ไปใช้ extension Envify ได้เลย ไม่ต้องเปิดเว็บ
+const ENVIFY_URL = "https://open-vsx.org/extension/pawaretdev/envify";
+const ENVIFY_TIP_DISMISSED_KEY = "env-converter-envify-tip-dismissed";
+
 interface TextFormatterSectionProps {
   mode: "delimiters" | "json" | "env";
 }
@@ -63,6 +70,25 @@ export function TextFormatterSection({ mode }: TextFormatterSectionProps) {
 
   const isJsonMode = mode === "json";
   const isEnvMode = mode === "env";
+
+  // แถบแนะนำ Envify (โหมด ENV เท่านั้น) — ปิดแล้วจำไว้ใน localStorage
+  const [envifyTipDismissed, setEnvifyTipDismissed] = useState(true);
+  useEffect(() => {
+    if (!isEnvMode) return;
+    try {
+      setEnvifyTipDismissed(localStorage.getItem(ENVIFY_TIP_DISMISSED_KEY) === "1");
+    } catch {
+      setEnvifyTipDismissed(false);
+    }
+  }, [isEnvMode]);
+  const dismissEnvifyTip = () => {
+    setEnvifyTipDismissed(true);
+    try {
+      localStorage.setItem(ENVIFY_TIP_DISMISSED_KEY, "1");
+    } catch {
+      // ignore
+    }
+  };
 
   const applyTextCase = useCallback(
     (text: string): string => {
@@ -412,6 +438,35 @@ export function TextFormatterSection({ mode }: TextFormatterSectionProps) {
           </div>
         </div>
       </div>
+
+      {/* Envify tip (ENV mode only) */}
+      {isEnvMode && !envifyTipDismissed && (
+        <div className="flex items-start sm:items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-3 sm:px-4 py-2.5 mb-4 shrink-0">
+          <Sparkles className="h-4 w-4 shrink-0 text-primary mt-0.5 sm:mt-0" />
+          <p className="flex-1 text-xs text-muted-foreground leading-relaxed">
+            <span className="text-foreground font-medium">Using VS Code, Cursor or VSCodium?</span>{" "}
+            Convert JSON ⇄ ENV right inside your editor with the{" "}
+            <a
+              href={ENVIFY_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-primary font-medium hover:underline"
+            >
+              Envify extension
+              <ExternalLink className="h-3 w-3" />
+            </a>
+            .
+          </p>
+          <button
+            type="button"
+            onClick={dismissEnvifyTip}
+            aria-label="Dismiss Envify tip"
+            className="shrink-0 rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Editor panels */}
       <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
