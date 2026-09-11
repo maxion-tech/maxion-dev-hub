@@ -181,6 +181,13 @@ function ConnectWalletModal({
 
 const RONIN_SIGN_API = "https://account-apis.maxion.gg/user-ronin/sign";
 const RONIN_CHAIN_ID = 2020;
+const BSC_CHAIN_ID = 97;
+
+const BSC_SIWE_HOSTS: { label: string; value: string }[] = [
+  { label: "Dragonica Platform", value: "https://dragonica-platform-apis.dev.maxion.gg" },
+];
+
+type SignMode = "web3token" | "siwe";
 
 // ─── Web3 Token Section ─────────────────────────────────────────
 
@@ -198,7 +205,18 @@ function Web3TokenSection({
   const [signing, setSigning] = useState(false);
   const { copied: copiedToken, copy: copyToken } = useCopyToClipboard();
 
-  const cookieKey = walletType === "ronin" ? "maxion_ronin_token" : WEB3_TOKEN_COOKIE;
+  const [signMode, setSignMode] = useState<SignMode>("web3token");
+  const handleSignModeChange = (mode: SignMode) => {
+    setSignMode(mode);
+    setWalletToken(null);
+    setTokenExpiry(null);
+  };
+  const [bscHost, setBscHost] = useState(BSC_SIWE_HOSTS[0].value);
+  const [customHost, setCustomHost] = useState("");
+  const isCustomHost = bscHost === "custom";
+  const resolvedHost = isCustomHost ? customHost.replace(/\/$/, "") : bscHost;
+
+  const cookieKey = walletType === "ronin" ? "maxion_ronin_token" : signMode === "siwe" ? "maxion_bsc_siwe_token" : WEB3_TOKEN_COOKIE;
   const expiryCookieKey = `${cookieKey}_expiry`;
 
   const parseMetaMaskExpiry = (token: string): Date | null => {
@@ -282,12 +300,55 @@ function Web3TokenSection({
     setCookie(expiryCookieKey, String(expiry.getTime()), 1);
   };
 
+  const signMetaMaskSiwe = async (): Promise<void> => {
+    if (!resolvedHost) throw new Error("No host selected");
+    const nonceRes = await fetch(`${resolvedHost}/v1/auth/nonce`);
+    if (!nonceRes.ok) throw new Error(`Nonce fetch failed: ${nonceRes.status}`);
+    const nonceData = await nonceRes.json();
+    const nonce: string = typeof nonceData === "string" ? nonceData : nonceData.nonce ?? nonceData.data;
+
+    const domain = new URL(resolvedHost).host;
+    const uri = resolvedHost;
+
+    const siweMessage = new SiweMessage({
+      domain,
+      address: address!,
+      statement: `I accept the dApp's Terms of Service: ${uri}/TermsConditions`,
+      uri,
+      version: "1",
+      chainId: BSC_CHAIN_ID,
+      nonce,
+    });
+
+    const message = siweMessage.prepareMessage();
+    const signature = await signMessageAsync({ message });
+
+    const verifyRes = await fetch(`${resolvedHost}/v1/auth/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, signature }),
+    });
+
+    if (!verifyRes.ok) {
+      const err = await verifyRes.text();
+      throw new Error(`Verify failed ${verifyRes.status}: ${err}`);
+    }
+
+    const data: { token: string; expiresIn?: number } = await verifyRes.json();
+    const expiry = data.expiresIn ? new Date(Date.now() + data.expiresIn) : null;
+    setWalletToken(data.token);
+    setTokenExpiry(expiry);
+    if (expiry) setCookie(expiryCookieKey, String(expiry.getTime()), 1);
+  };
+
   const handleSign = async () => {
     if (!address || signing) return;
     setSigning(true);
     try {
       if (walletType === "ronin") {
         await signRonin();
+      } else if (signMode === "siwe") {
+        await signMetaMaskSiwe();
       } else {
         await signMetaMask();
       }
@@ -325,10 +386,51 @@ function Web3TokenSection({
     return `${seconds}s`;
   };
 
-  const label = walletType === "ronin" ? "Ronin Token" : "Web3 Token";
+  const label = walletType === "ronin" ? "Ronin Token" : signMode === "siwe" ? "SIWE Token" : "Web3 Token";
 
   return (
     <div className="space-y-3">
+      {walletType === "metamask" && (
+        <div className="flex items-center gap-1 rounded-lg border border-border bg-secondary/30 p-1">
+          {(["web3token", "siwe"] as SignMode[]).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => handleSignModeChange(mode)}
+              className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                signMode === mode
+                  ? "bg-card text-foreground shadow-sm border border-border"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {mode === "web3token" ? "Web3 Token" : "SIWE"}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {walletType === "metamask" && signMode === "siwe" && (
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <Dropdown
+                options={[...BSC_SIWE_HOSTS, { label: "Custom URL", value: "custom" }]}
+                value={[...BSC_SIWE_HOSTS, { label: "Custom URL", value: "custom" }].find((h) => h.value === bscHost) ?? BSC_SIWE_HOSTS[0]}
+                onChange={(item) => setBscHost(item.value)}
+              />
+            </div>
+          </div>
+          {isCustomHost && (
+            <input
+              type="url"
+              value={customHost}
+              onChange={(e) => setCustomHost(e.target.value)}
+              placeholder="https://your-api.example.com"
+              className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-xs font-mono text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus:bg-secondary transition-colors"
+            />
+          )}
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <SectionLabel>{label}</SectionLabel>
         {tokenExpiry && (
