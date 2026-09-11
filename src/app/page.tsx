@@ -9,6 +9,8 @@ import { LoginSection } from "@/components/login-section";
 import { AuthSection } from "@/components/auth-section";
 import { platformFirebase } from "@/config/firebase";
 import { providers, ProviderType, canUseOpsTools } from "@/constants";
+import { NO_ACCESS, canUseFeature, type OpsAccess } from "@/constants/ops-tools";
+import { platformSupportApi } from "@/lib/platform-support";
 import { useTheme } from "@/hooks/use-theme";
 
 function TabSkeleton() {
@@ -41,8 +43,12 @@ const NftOwnershipSection = dynamic(
   () => import("@/components/nft-ownership-section").then((m) => ({ default: m.NftOwnershipSection })),
   { ssr: false, loading: () => <TabSkeleton /> }
 );
+const AccessControlSection = dynamic(
+  () => import("@/components/access-control-section").then((m) => ({ default: m.AccessControlSection })),
+  { ssr: false, loading: () => <TabSkeleton /> }
+);
 
-export type TabId = "auth" | "wallet" | "delimiters" | "json" | "env" | "gantt" | "apikey" | "nft-ownership";
+export type TabId = "auth" | "wallet" | "delimiters" | "json" | "env" | "gantt" | "apikey" | "nft-ownership" | "access-control";
 
 const tabLabels: Record<TabId, string> = {
   auth: "Authentication",
@@ -53,6 +59,7 @@ const tabLabels: Record<TabId, string> = {
   gantt: "Gantt to CSV",
   apikey: "API Key Generator",
   "nft-ownership": "NFT Ownership Check",
+  "access-control": "Access Control",
 };
 
 type ProviderItem = (typeof providers)[number];
@@ -63,7 +70,23 @@ export default function Home() {
   const [token, setToken] = useState("");
   const [refreshToken, setRefreshToken] = useState("");
   const [email, setEmail] = useState("");
+  // Ops Tools access for the signed-in account (managed in the Access Control tab)
+  const [opsAccess, setOpsAccess] = useState<OpsAccess | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>("auth");
+
+  useEffect(() => {
+    if (!email || !canUseOpsTools(email)) {
+      setOpsAccess(null);
+      return;
+    }
+    let cancelled = false;
+    platformSupportApi<OpsAccess>("acl/me")
+      .then((a) => !cancelled && setOpsAccess(a))
+      .catch(() => !cancelled && setOpsAccess(NO_ACCESS));
+    return () => {
+      cancelled = true;
+    };
+  }, [email]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [provider, setProvider] = useState<ProviderItem>(providers[0]);
@@ -129,6 +152,7 @@ export default function Home() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         email={email}
+              opsAccess={opsAccess}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         mobileOpen={mobileMenuOpen}
@@ -166,7 +190,8 @@ export default function Home() {
           {activeTab === "env" && <TextFormatterSection mode="env" />}
           {activeTab === "gantt" && <GanttCsvSection />}
           {activeTab === "apikey" && <ApiKeySection />}
-          {activeTab === "nft-ownership" && canUseOpsTools(email) && <NftOwnershipSection />}
+          {activeTab === "nft-ownership" && canUseFeature(opsAccess, "nft-ownership") && <NftOwnershipSection />}
+          {activeTab === "access-control" && opsAccess?.role === "admin" && <AccessControlSection currentEmail={email} />}
         </div>
       </main>
       <Toaster theme="dark" position="bottom-right" richColors />

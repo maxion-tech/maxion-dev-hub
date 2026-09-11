@@ -33,7 +33,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { SectionLabel } from "@/components/ui/section-label";
 import { Dropdown } from "@/components/ui/dropdown";
-import { platformFirebase } from "@/config/firebase";
+import { platformSupportApi } from "@/lib/platform-support";
 
 // ─── Types (mirror maxion-platform-support /api/check) ─────────
 
@@ -149,24 +149,9 @@ const OPERATOR_LABELS: Record<string, string> = {
 const MARKETPLACE = "0xb5d2fc5628ae5537a9c62e9fca1c242b470d455a";
 
 // ─── API ───────────────────────────────────────────────────────
-// Calls go through /api/platform-support/* (Next.js route) which holds the maxion-platform-support URL and
-// admin token server-side (MAXION_PLATFORM_SUPPORT_URL / MAXION_PLATFORM_SUPPORT_TOKEN) and verifies the Firebase session.
+// All calls go through the Next.js proxy; see src/lib/platform-support.ts.
 
-async function api<T>(path: string, params: Record<string, string>): Promise<T> {
-  const user = platformFirebase.auth().currentUser;
-  if (!user) throw new Error("Sign in required");
-  const idToken = await user.getIdToken();
-  const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== "")).toString();
-  let res: Response;
-  try {
-    res = await fetch(`/api/platform-support/${path}${qs ? `?${qs}` : ""}`, { headers: { Authorization: `Bearer ${idToken}` } });
-  } catch (err) {
-    throw new Error(`Cannot reach the service (${err instanceof Error ? err.message : String(err)})`);
-  }
-  const data = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-  return data as T;
-}
+const api = <T,>(path: string, params: Record<string, string>) => platformSupportApi<T>(path, { params });
 
 // ─── Helpers ───────────────────────────────────────────────────
 

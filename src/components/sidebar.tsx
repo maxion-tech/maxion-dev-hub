@@ -18,7 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { ThemeSelector } from "@/components/theme-selector";
-import { canUseOpsTools } from "@/constants";
+import { canUseFeature, type OpsAccess } from "@/constants/ops-tools";
 
 interface NavItem {
   id: TabId;
@@ -76,12 +76,19 @@ const navItems: NavItem[] = [
     icon: <ScanSearch className="h-4 w-4 shrink-0 text-info" />,
     group: "Ops Tools",
   },
+  {
+    id: "access-control",
+    label: "Access Control",
+    icon: <ShieldCheck className="h-4 w-4 shrink-0 text-primary" />,
+    group: "Ops Tools",
+  },
 ];
 
 interface SidebarProps {
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
   email: string;
+  opsAccess: OpsAccess | null;
   collapsed: boolean;
   onToggleCollapse: () => void;
   mobileOpen: boolean;
@@ -92,13 +99,18 @@ export function Sidebar({
   activeTab,
   onTabChange,
   email,
+  opsAccess,
   collapsed,
   onToggleCollapse,
   mobileOpen,
   onMobileClose,
 }: SidebarProps) {
-  // กลุ่ม Ops Tools โชว์เฉพาะอีเมลโดเมนที่อนุญาต (ดู OPS_TOOLS_EMAIL_DOMAINS)
-  const visibleItems = navItems.filter((item) => item.group !== "Ops Tools" || canUseOpsTools(email));
+  // Ops Tools: each item needs a grant from Access Control; "access-control" itself is admin-only
+  const visibleItems = navItems.filter((item) => {
+    if (item.group !== "Ops Tools") return true;
+    if (item.id === "access-control") return opsAccess?.role === "admin";
+    return canUseFeature(opsAccess, item.id);
+  });
   const groups = Array.from(new Set(visibleItems.map((item) => item.group)));
 
   // Lock body scroll when mobile drawer is open

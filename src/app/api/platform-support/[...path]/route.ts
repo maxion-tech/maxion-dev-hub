@@ -8,7 +8,13 @@ import { canUseOpsTools } from "@/constants";
 
 export const dynamic = "force-dynamic";
 
-const ALLOWED_PATHS = /^(config|check|holdings|trace|compare|history(\/[A-Za-z0-9_-]+)?)$/;
+type Method = "GET" | "POST" | "PUT" | "DELETE";
+const ALLOWED: Record<Method, RegExp> = {
+  GET: /^(config|check|holdings|trace|compare|history(\/[A-Za-z0-9_-]+)?|acl\/(me|users|export))$/,
+  POST: /^acl\/import$/,
+  PUT: /^acl\/users\/[^/]+$/,
+  DELETE: /^acl\/users\/[^/]+$/,
+};
 
 async function verifyIdToken(idToken: string): Promise<string | null> {
   const apiKey = process.env.NEXT_PUBLIC_PLATFORM_API_KEY;
@@ -25,7 +31,7 @@ async function verifyIdToken(idToken: string): Promise<string | null> {
   return u?.email && u.emailVerified !== false ? u.email : null;
 }
 
-export async function GET(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
+async function proxy(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }, method: Method) {
   const base = process.env.MAXION_PLATFORM_SUPPORT_URL?.replace(/\/+$/, "");
   const token = process.env.MAXION_PLATFORM_SUPPORT_TOKEN;
   if (!base || !token) {
@@ -41,13 +47,16 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ path: strin
 
   const { path } = await ctx.params;
   const p = path.join("/");
-  if (!ALLOWED_PATHS.test(p)) return NextResponse.json({ error: "Unknown endpoint" }, { status: 404 });
+  if (!ALLOWED[method].test(p)) return NextResponse.json({ error: "Unknown endpoint" }, { status: 404 });
 
   const url = `${base}/api/${p}${req.nextUrl.search}`;
+  const hasBody = method === "POST" || method === "PUT";
   let upstream: Response;
   try {
     upstream = await fetch(url, {
-      headers: { "x-admin-token": token, "X-User": email, Accept: "application/json" },
+      method,
+      headers: { "x-admin-token": token, "X-User": email, Accept: "application/json", ...(hasBody ? { "Content-Type": "application/json" } : {}) },
+      body: hasBody ? await req.text() : undefined,
       cache: "no-store",
       signal: AbortSignal.timeout(120_000),
     });
@@ -59,4 +68,20 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ path: strin
     status: upstream.status,
     headers: { "Content-Type": upstream.headers.get("content-type") ?? "application/json" },
   });
+}
+
+export async function GET(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
+  return proxy(req, ctx, "GET");
+}
+
+export async function POST(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
+  return proxy(req, ctx, "POST");
+}
+
+export async function PUT(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
+  return proxy(req, ctx, "PUT");
+}
+
+export async function DELETE(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
+  return proxy(req, ctx, "DELETE");
 }
