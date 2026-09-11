@@ -10,9 +10,9 @@ export const dynamic = "force-dynamic";
 
 type Method = "GET" | "POST" | "PUT" | "DELETE";
 const ALLOWED: Record<Method, RegExp> = {
-  GET: /^(config|check|holdings|trace|compare|history(\/[A-Za-z0-9_-]+)?|acl\/(me|users|export))$/,
+  GET: /^(config|check|holdings|trace|compare|history(\/[A-Za-z0-9_-]+)?|acl\/(me|users|features|export))$/,
   POST: /^acl\/import$/,
-  PUT: /^acl\/users\/[^/]+$/,
+  PUT: /^acl\/(users|features)\/[^/]+$/,
   DELETE: /^acl\/users\/[^/]+$/,
 };
 

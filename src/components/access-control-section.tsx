@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Download, Loader2, Plus, RefreshCw, ShieldCheck, Trash2, Upload, UserRound } from "lucide-react";
+import { Download, Loader2, Lock, LockOpen, Plus, RefreshCw, ShieldCheck, Trash2, Upload, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,13 @@ interface AclEntry {
   updatedBy?: string;
   updatedAt?: string;
   bootstrap?: boolean; // defined by ADMIN_EMAILS on the service; read-only here
+}
+
+interface FeaturePolicy {
+  feature: string;
+  restricted: boolean;
+  updatedBy?: string;
+  updatedAt?: string;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -49,15 +56,24 @@ export function AccessControlSection({ currentEmail }: { currentEmail: string })
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null); // email being saved
   const [newEmail, setNewEmail] = useState("");
-  const [newFeatures, setNewFeatures] = useState<string[]>(OPS_FEATURES.map((f) => f.id));
+  const [newFeatures, setNewFeatures] = useState<string[]>([]);
+  const [policies, setPolicies] = useState<Record<string, FeaturePolicy>>({});
+  const [policyBusy, setPolicyBusy] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const isRestricted = (featureId: string) => policies[featureId]?.restricted === true;
+  const restrictedFeatures = OPS_FEATURES.filter((f) => isRestricted(f.id));
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await platformSupportApi<{ users: AclEntry[]; store: string }>("acl/users");
+      const [res, pol] = await Promise.all([
+        platformSupportApi<{ users: AclEntry[]; store: string }>("acl/users"),
+        platformSupportApi<{ features: FeaturePolicy[] }>("acl/features"),
+      ]);
       setUsers(res.users ?? []);
       setStore(res.store ?? "");
+      setPolicies(Object.fromEntries((pol.features ?? []).map((p) => [p.feature, p])));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
     } finally {
@@ -86,6 +102,23 @@ export function AccessControlSection({ currentEmail }: { currentEmail: string })
       return false;
     } finally {
       setBusy(null);
+    }
+  }
+
+  async function setRestricted(featureId: string, restricted: boolean) {
+    const f = OPS_FEATURES.find((x) => x.id === featureId);
+    const label = f?.label ?? featureId;
+    if (restricted && !window.confirm(`Restrict "${label}"? Only admins and people ticked below will be able to use it.`)) return;
+    if (!restricted && !window.confirm(`Open "${label}" to everyone at @maxion.tech?`)) return;
+    setPolicyBusy(featureId);
+    try {
+      const saved = await platformSupportApi<FeaturePolicy>(`acl/features/${encodeURIComponent(featureId)}`, { method: "PUT", body: { restricted } });
+      setPolicies((prev) => ({ ...prev, [featureId]: saved }));
+      toast.success(restricted ? `${label} is now restricted` : `${label} is open to everyone`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setPolicyBusy(null);
     }
   }
 
@@ -135,10 +168,10 @@ export function AccessControlSection({ currentEmail }: { currentEmail: string })
 
   async function importJson(file: File) {
     try {
-      const parsed = JSON.parse(await file.text()) as { users?: AclEntry[] };
+      const parsed = JSON.parse(await file.text()) as { users?: AclEntry[]; features?: FeaturePolicy[] };
       if (!Array.isArray(parsed.users)) throw new Error("File must contain a \"users\" array");
-      if (!window.confirm(`Import ${parsed.users.length} entr${parsed.users.length === 1 ? "y" : "ies"}? Existing entries with the same email are overwritten.`)) return;
-      const res = await platformSupportApi<{ imported: number }>("acl/import", { method: "POST", body: { users: parsed.users } });
+      if (!window.confirm(`Import ${parsed.users.length} entr${parsed.users.length === 1 ? "y" : "ies"} and tool settings? Existing entries with the same email are overwritten.`)) return;
+      const res = await platformSupportApi<{ imported: number }>("acl/import", { method: "POST", body: { users: parsed.users, features: parsed.features ?? [] } });
       toast.success(`Imported ${res.imported} entr${res.imported === 1 ? "y" : "ies"}`);
       void load();
     } catch (err) {
@@ -168,8 +201,42 @@ export function AccessControlSection({ currentEmail }: { currentEmail: string })
       <div>
         <h1 className="text-2xl font-bold">Access Control</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Choose which @maxion.tech accounts can use each Ops Tool. Admins can use everything and edit this list. Changes apply on the person&apos;s next page load.
+          Every Ops Tool is open to all @maxion.tech accounts by default. Restrict a tool to limit it to the people you tick below. Admins can use everything and edit this page. Changes apply on the person&apos;s next page load.
         </p>
+      </div>
+
+      {/* Tools */}
+      <div className="rounded-xl border border-border bg-card p-6 space-y-3">
+        <h2 className="text-sm font-semibold">Tools</h2>
+        <div className="divide-y divide-border/60 rounded-lg border border-border">
+          {OPS_FEATURES.map((f) => {
+            const restricted = isRestricted(f.id);
+            const grantedCount = users.filter((u) => u.role !== "admin" && u.features.includes(f.id)).length;
+            return (
+              <div key={f.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                <div className="min-w-0">
+                  <div className="text-sm font-medium">{f.label}</div>
+                  <div className="text-xs text-muted-foreground">{f.description}</div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold",
+                      restricted ? "bg-warning/10 text-warning border-warning/20" : "bg-success/10 text-success border-success/20"
+                    )}
+                  >
+                    {restricted ? <Lock className="h-3 w-3" /> : <LockOpen className="h-3 w-3" />}
+                    {restricted ? `Restricted · ${grantedCount} ${grantedCount === 1 ? "person" : "people"} + admins` : "Everyone @maxion.tech"}
+                  </span>
+                  <Button size="sm" variant="secondary" onClick={() => setRestricted(f.id, !restricted)} disabled={policyBusy === f.id || loading}>
+                    {policyBusy === f.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : restricted ? <LockOpen className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                    {restricted ? "Open to everyone" : "Restrict"}
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Add */}
@@ -192,16 +259,20 @@ export function AccessControlSection({ currentEmail }: { currentEmail: string })
             Add
           </Button>
         </div>
-        <div className="flex flex-wrap gap-4">
-          {OPS_FEATURES.map((f) => (
-            <Checkbox
-              key={f.id}
-              label={f.label}
-              checked={newFeatures.includes(f.id)}
-              onChange={(on) => setNewFeatures((prev) => (on ? [...prev, f.id] : prev.filter((x) => x !== f.id)))}
-            />
-          ))}
-        </div>
+        {restrictedFeatures.length > 0 ? (
+          <div className="flex flex-wrap gap-4">
+            {restrictedFeatures.map((f) => (
+              <Checkbox
+                key={f.id}
+                label={f.label}
+                checked={newFeatures.includes(f.id)}
+                onChange={(on) => setNewFeatures((prev) => (on ? [...prev, f.id] : prev.filter((x) => x !== f.id)))}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">No tool is restricted right now, so everyone already has access. Add people here only if you plan to restrict a tool, or to make someone an admin.</p>
+        )}
       </div>
 
       {/* List */}
@@ -235,8 +306,9 @@ export function AccessControlSection({ currentEmail }: { currentEmail: string })
                   <th className="py-2 px-3 font-medium">Email</th>
                   <th className="py-2 px-3 font-medium">Role</th>
                   {OPS_FEATURES.map((f) => (
-                    <th key={f.id} className="py-2 px-3 font-medium whitespace-nowrap" title={f.description}>
+                    <th key={f.id} className="py-2 px-3 font-medium whitespace-nowrap" title={isRestricted(f.id) ? f.description : "Open to everyone — ticks are ignored until you restrict this tool"}>
                       {f.label}
+                      {!isRestricted(f.id) && <span className="ml-1 text-[10px] font-normal text-success">open</span>}
                     </th>
                   ))}
                   <th className="py-2 px-3 font-medium whitespace-nowrap">Last change</th>
@@ -259,7 +331,7 @@ export function AccessControlSection({ currentEmail }: { currentEmail: string })
                           type="button"
                           onClick={() => !locked && toggleAdmin(u)}
                           disabled={locked || saving}
-                          title={locked ? "Defined by ADMIN_EMAILS on the service" : isAdmin ? "Click to remove admin" : "Click to make admin"}
+                          title={locked ? "Permanent admin, set in the service configuration (ADMIN_EMAILS); cannot be changed here" : isAdmin ? "Click to remove admin" : "Click to make admin"}
                           className={cn(
                             "inline-flex items-center gap-1 rounded-full border px-2 py-px font-semibold transition-colors",
                             isAdmin ? "bg-primary/10 text-primary border-primary/30" : "bg-secondary text-muted-foreground border-border hover:text-foreground",
@@ -267,15 +339,15 @@ export function AccessControlSection({ currentEmail }: { currentEmail: string })
                           )}
                         >
                           {isAdmin ? <ShieldCheck className="h-3 w-3" /> : <UserRound className="h-3 w-3" />}
-                          {isAdmin ? (locked ? "admin (env)" : "admin") : "user"}
+                          {isAdmin ? (locked ? "admin · fixed" : "admin") : "user"}
                         </button>
                       </td>
                       {OPS_FEATURES.map((f) => (
                         <td key={f.id} className="py-2 px-3">
                           <Checkbox
-                            label={isAdmin ? "all" : ""}
-                            checked={isAdmin || u.features.includes(f.id)}
-                            disabled={isAdmin || saving}
+                            label={isAdmin ? "all" : !isRestricted(f.id) ? "open" : ""}
+                            checked={isAdmin || !isRestricted(f.id) || u.features.includes(f.id)}
+                            disabled={isAdmin || !isRestricted(f.id) || saving}
                             onChange={(on) => toggleFeature(u, f.id, on)}
                           />
                         </td>
@@ -299,7 +371,7 @@ export function AccessControlSection({ currentEmail }: { currentEmail: string })
           </div>
         )}
         <p className="text-xs text-muted-foreground">
-          Only @maxion.tech accounts can sign in at all; this list decides which tools each of them sees. Keep an Export as a backup — if the store is ever lost, only the env-defined admin keeps access.
+          Only @maxion.tech accounts can sign in at all. Ticks only matter for restricted tools. Keep an Export as a backup — if the store is ever lost, every tool reopens to everyone and only the permanent admin can edit this page.
         </p>
       </div>
     </div>
