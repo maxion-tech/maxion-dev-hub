@@ -14,6 +14,8 @@ interface DropdownProps<T> {
   label?: string;
   size?: "sm" | "default";
   className?: string;
+  /** Extra classes for the trigger button, e.g. "px-3 py-2" to line up with a text input next to it. */
+  triggerClassName?: string;
 }
 
 function defaultGetKey<T>(item: T): string | number {
@@ -43,6 +45,7 @@ export function Dropdown<T>({
   label,
   size = "default",
   className,
+  triggerClassName,
 }: DropdownProps<T>) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -87,7 +90,8 @@ export function Dropdown<T>({
         aria-haspopup="listbox"
         className={cn(
           "flex w-full items-center justify-between rounded-lg border border-border bg-secondary/30 text-foreground transition-colors hover:border-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background",
-          triggerClasses
+          triggerClasses,
+          triggerClassName
         )}
       >
         {renderSel(value)}

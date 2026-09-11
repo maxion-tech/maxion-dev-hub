@@ -390,6 +390,7 @@ export function WebhookReplaySection() {
             <SectionLabel as="label">Game</SectionLabel>
             {game && config ? (
               <Dropdown<GameCfg>
+              triggerClassName="px-3 py-2"
                 value={game}
                 options={config.games}
                 onChange={onGameChange}
@@ -405,6 +406,7 @@ export function WebhookReplaySection() {
             <SectionLabel as="label">Event</SectionLabel>
             {event ? (
               <Dropdown<EventCfg>
+              triggerClassName="px-3 py-2"
                 value={event}
                 options={enabledEvents}
                 onChange={setEvent}

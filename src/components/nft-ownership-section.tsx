@@ -971,6 +971,7 @@ export function NftOwnershipSection() {
           <div className="space-y-1.5">
             <SectionLabel as="label">Collection</SectionLabel>
             <Dropdown<Collection>
+              triggerClassName="px-3 py-2"
               value={collection}
               options={COLLECTIONS}
               onChange={setCollection}
